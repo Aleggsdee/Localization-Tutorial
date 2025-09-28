@@ -8,7 +8,7 @@ import pickle
 # Constants
 GRID_WIDTH = 96 + 2 # inches (one extra inch on each side for border)
 GRID_HEIGHT = 48 + 2 # inches (one extra inch on each side for border)
-ppi = 3
+ppi = 12
 WINDOW_WIDTH = GRID_WIDTH * ppi
 WINDOW_HEIGHT = GRID_HEIGHT * ppi
 WHITE = (255, 255, 255)
@@ -26,10 +26,12 @@ ANGULAR_VELOCITY = math.radians(120)  # 60 degrees per second
 
 # Noise parameters
 MOVEMENT_NOISE = 0.2
-WEIGHT_NOISE = 0.5
+MIN_SENSOR_STD = 1
+MAX_SENSOR_STD = 2
+certainty = 0
 
 
-with open('sensor_data_3_ppi_15_beam_angle.pkl', 'rb') as f:
+with open('sensor_data_12_ppi_15_beam_angle.pkl', 'rb') as f:
     loaded_sensor_readings = pickle.load(f)
 
 
@@ -124,33 +126,38 @@ def normal_pdf(x, mean, std_dev):
     return coefficient * exponent
 
 
-def particle_variance(particles):
-    # Calculate variance in x and y directions
-    variance_x = np.var([p.x for p in particles])
-    variance_y = np.var([p.y for p in particles])
+def particle_variance(particles, weights, pred_x, pred_y):    
+    variance_x = np.average([(p.x - pred_x)**2 / ppi**2 for p in particles], weights = weights)
+    variance_y = np.average([(p.y - pred_y)**2 / ppi**2 for p in particles], weights = weights)
     
     # Average the variances to get a single spread measure
     return (variance_x + variance_y) / 2
 
-
-def check_convergence(particles, threshold):
-    spread = particle_variance(particles)
-    return spread < threshold
+def estimate(particles):
+    particles_x = [p.x for p in particles]
+    particles_y = [p.y for p in particles]
+    particles_theta = [p.theta for p in particles]
+    weights = [p.weight for p in particles]
+    mean_x = np.average(particles_x, weights = weights)
+    mean_y = np.average(particles_y, weights = weights)
+    mean_theta = np.average(particles_theta, weights = weights)
+    
+    return mean_x, mean_y, mean_theta
 
 
 def normalize_angle(angle):
     return int(angle % 360)
 
 
-def resample_particles(particles, grid, valid_positions):
+def resample_particles(particles, grid, valid_positions, pred_x, pred_y):
     weights = [p.weight for p in particles]
     total_weight = sum(weights)    
     # Normalize weights
     weights = [w / total_weight for w in weights]
-    variance = particle_variance(particles)
-    print(variance)
-    certainty = ppi**2 / (variance)
-    adjusted_num_particles = max(int(NUM_PARTICLES * max(1 - certainty, 0)), 300)
+    variance = particle_variance(particles, weights, pred_x, pred_y)
+    certainty = ppi**2 * 2 / (variance)
+    print(f"Certainty: {certainty}")
+    adjusted_num_particles = max(int(NUM_PARTICLES * max(1 - certainty, 0)), 1000)
 
     # resampling algorithm
     indexes = stratified_resample(weights)
@@ -163,8 +170,8 @@ def resample_particles(particles, grid, valid_positions):
     def jitter_particle(particle):
         # Add a small random noise to position (pose.x, pose.y) and orientation (pose.theta)
         noise_scale = max(1 - certainty, 0)
-        new_x = particle.x + np.random.normal(0, 0.1 + 0.5 * noise_scale)  # Jitter in x-axis
-        new_y = particle.y + np.random.normal(0, 0.1 + 0.5 * noise_scale)  # Jitter in y-axis
+        new_x = particle.x + np.random.normal(0, 0.5 + 2 * noise_scale)  # Jitter in x-axis
+        new_y = particle.y + np.random.normal(0, 0.5 + 2 * noise_scale)  # Jitter in y-axis
         new_theta = particle.theta + np.random.normal(0, 0.1)  # Jitter in orientation
         
         # Create a new particle with a similar pose
@@ -182,7 +189,7 @@ def resample_particles(particles, grid, valid_positions):
     # Apply jitter to resampled particles and also add some random jitter for new exploration
     jittered_particles = [jitter_particle(p) for p in particles]
     
-    return jittered_particles
+    return jittered_particles, variance
 
 
 def update_particles(particles, rover, dt, grid):
@@ -329,9 +336,10 @@ class Particle:
         
     def update_weight(self, lidar_distances, expected_distances):
         """Update particle weight based on the lidar readings."""
-        # Calculate how closely the lidar readings match expected points        
+        # Calculate how closely the lidar readings match expected points     
+        sensor_std = MIN_SENSOR_STD + (MAX_SENSOR_STD - MIN_SENSOR_STD) * max(1 - certainty, 0)
         for lidar, expected in zip(lidar_distances, expected_distances):
-            self.weight *= normal_pdf(expected, lidar, 2.75 * ppi)
+            self.weight *= normal_pdf(expected, lidar, sensor_std * ppi)
         self.weight += 1.e-300
 
     def lidar_scan(self, grid):

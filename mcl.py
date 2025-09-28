@@ -10,7 +10,7 @@ pygame.init()
 # Constants
 GRID_WIDTH = 96 + 2 # inches (one extra inch on each side for border)
 GRID_HEIGHT = 48 + 2 # inches (one extra inch on each side for border)
-ppi = 3
+ppi = 12
 WINDOW_WIDTH = GRID_WIDTH * ppi
 WINDOW_HEIGHT = GRID_HEIGHT * ppi
 WHITE = (255, 255, 255)
@@ -40,7 +40,7 @@ valid_positions = mh.create_valid_positions(grid)
 # Initialize rover and particles
 rover = Rover(grid, valid_positions)
 particles = [Particle(grid, valid_positions) for _ in range(NUM_PARTICLES)]
-
+pred_x, pred_y, pred_theta = mh.estimate(particles)
 
 # Initialize window
 print(len(grid[0]))
@@ -100,7 +100,7 @@ while running:
         particle.update_weight(particle_lidar_distances, lidar_distances)
     
     if rover.vel_forward != 0 or rover.vel_angular != 0:
-        particles = mh.resample_particles(particles, grid, valid_positions)        
+        particles, variance = mh.resample_particles(particles, grid, valid_positions, pred_x, pred_y)        
 
     # Event handling
     for event in pygame.event.get():
