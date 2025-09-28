@@ -1,11 +1,6 @@
 import pygame
-import random
 import math
-import numpy as np
 import copy
-from filterpy.monte_carlo import stratified_resample
-import time
-import pickle
 import mcl_helper as mh
 from mcl_helper import Rover, Particle
 
@@ -28,8 +23,8 @@ MIN_SENSOR_READING = 3.0 / 2.54
 
 # Simulation parameters
 NUM_PARTICLES = 5000
-FORWARD_VELOCITY = 4 * ppi  # units per second
-ANGULAR_VELOCITY = math.radians(120)  # 60 degrees per second
+FORWARD_VELOCITY = 4 * ppi  # inches per second
+ANGULAR_VELOCITY = math.radians(120)  # 120 degrees per second
 
 # Noise parameters
 MOVEMENT_NOISE = 0.2

@@ -2,9 +2,7 @@ import pygame
 import random
 import math
 import numpy as np
-import copy
 from filterpy.monte_carlo import stratified_resample
-import time
 import pickle
 
 # Constants
@@ -69,7 +67,7 @@ def init_grid():
     return grid
 
 
-def expand_grid(grid, factor=12):
+def expand_grid(grid, factor):
     """Expands each cell in the 2D grid into a larger cell of `factor x factor`.
     
     Args:
@@ -120,7 +118,7 @@ def draw_grid(window, grid):
 
 
 def normal_pdf(x, mean, std_dev):
-    """Calculate the PDF of a normal distribution at x."""
+    """Calculate the PDF of a normal distribution at x given mean and std_dev."""
     coefficient = 1 / (std_dev * np.sqrt(2 * np.pi))
     exponent = np.exp(-0.5 * ((x - mean) / std_dev) ** 2)
     return coefficient * exponent
