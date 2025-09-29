@@ -27,7 +27,7 @@ ANGULAR_VELOCITY = math.radians(120)  # 60 degrees per second
 # Noise parameters
 MOVEMENT_NOISE = 0.2
 MIN_SENSOR_STD = 1
-MAX_SENSOR_STD = 2
+MAX_SENSOR_STD = 1.75
 certainty = 0
 
 
@@ -314,8 +314,6 @@ class Particle:
             if grid[self.y][self.x] == 0:
                 break
         self.theta = random.uniform(0, 2 * math.pi)
-        # self.theta = -math.pi / 2
-        # self.theta = random.choice([0, math.pi / 2, math.pi, 3 * math.pi / 2])
         self.weight = 1.0 / NUM_PARTICLES
 
     def move(self, forward_velocity, angular_velocity, dt, grid):

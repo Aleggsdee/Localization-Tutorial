@@ -22,7 +22,7 @@ MAX_SENSOR_READING = 6000.0 / 127.0
 MIN_SENSOR_READING = 3.0 / 2.54
 
 # Simulation parameters
-NUM_PARTICLES = 5000
+NUM_PARTICLES = mh.NUM_PARTICLES
 FORWARD_VELOCITY = 4 * ppi  # inches per second
 ANGULAR_VELOCITY = math.radians(120)  # 120 degrees per second
 
@@ -90,7 +90,7 @@ while running:
     mh.draw_orientation(window, rover_pos[0], rover_pos[1], rover.theta, length=ppi, color=GREEN)
 
     # Lidar scan for the rover and draw points
-    lidar_distances = rover.lidar_scan(grid)
+    lidar_distances = rover.lidar_scan_fast()
     particle_lidar_distances = []
 
     # Update particle weights and resample
