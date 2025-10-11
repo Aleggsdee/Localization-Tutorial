@@ -25,8 +25,8 @@ FORWARD_VELOCITY = 4 * ppi  # units per second
 ANGULAR_VELOCITY = math.radians(120)  # 60 degrees per second
 
 # Noise parameters
-MOVEMENT_NOISE = 0.2
-MIN_SENSOR_STD = 1
+MOVEMENT_NOISE = 0.25
+MIN_SENSOR_STD = 0.8
 MAX_SENSOR_STD = 1.75
 certainty = 0
 
@@ -156,7 +156,7 @@ def resample_particles(particles, grid, valid_positions, pred_x, pred_y):
     weights = [w / total_weight for w in weights]
     variance = particle_variance(particles, weights, pred_x, pred_y)
     certainty = ppi**2 * 2 / (variance)
-    print(f"Certainty: {certainty}")
+    print(f"Certainty: {min(certainty, 1)}")
     adjusted_num_particles = max(int(NUM_PARTICLES * max(1 - certainty, 0)), 1000)
 
     # resampling algorithm
@@ -193,7 +193,7 @@ def resample_particles(particles, grid, valid_positions, pred_x, pred_y):
 
 
 def update_particles(particles, rover, dt, grid):
-    """Move and update particle weights."""
+    """Move particle weights."""
     for particle in particles:
         particle.move(rover.vel_forward, rover.vel_angular, dt, grid)
 
@@ -236,13 +236,11 @@ class Rover:
         self.theta = new_theta
     
     def lidar_scan(self, grid):
-        """Simulate a lidar scan with a 180-degree beam width for the particle,
-        using a 25-degree beam width (fan) for each scan angle."""
+        """Simulate a lidar scan with a 180-degree beam width for the rover,
+        using a 15-degree beam width (fan) for each scan angle."""
         num_scan_angles = 7
-        # scan_angles = np.linspace(0, 359, num_scan_angles) * (math.pi / 180)  # Main scan angles
         scan_angles = np.linspace(-90, 90, num_scan_angles) * (math.pi / 180)  # Main scan angles
-        beam_half_angle = 12.5 * (math.pi / 180)  # Half of 25 degrees in radians
-        # lidar_distances = []  # List to hold shortest lidar hit distance for each scan angle
+        beam_half_angle = 7.5 * (math.pi / 180)  # Half of 15 degrees in radians
         lidar_distances = np.zeros(num_scan_angles)
 
         for index, angle in enumerate(scan_angles):
@@ -250,7 +248,7 @@ class Rover:
             sensor_x = self.x + 3.0 * ppi * math.cos(scan_angle)
             sensor_y =  self.y + 3.0 * ppi * math.sin(scan_angle)
             
-            # Fan out with multiple scan lines within Â±12.5 degrees
+            # Fan out with multiple scan lines within ±7.5 degrees
             num_beams = 10
             beam_angles = np.linspace(scan_angle - beam_half_angle, scan_angle + beam_half_angle, num_beams)
 
@@ -290,11 +288,10 @@ class Rover:
         return lidar_distances   
     
     def lidar_scan_fast(self):
-        """Simulate a lidar scan with a 180-degree beam width for the particle,
-        using a 25-degree beam width (fan) for each scan angle."""
+        """Simulate a lidar scan with a 180-degree beam width for the rover,
+        using a 15-degree beam width (fan) for each scan angle."""
         # scan_angles = np.linspace(0, 359, 360) * (math.pi / 180)  # Main scan angles
         scan_angles = np.linspace(-90, 90, 7)  # Main scan angles
-        # scan_angles = [0] # for only front sensor
         lidar_distances = []  # List to hold shortest lidar hit distance for each scan angle
 
         for angle in scan_angles:
@@ -341,11 +338,9 @@ class Particle:
         self.weight += 1.e-300
 
     def lidar_scan(self, grid):
-        """Simulate a lidar scan with a 180-degree beam width for the particle,
-        using a 25-degree beam width (fan) for each scan angle."""
-        # scan_angles = np.linspace(-90, 90, 7) * (math.pi / 180)  # Main scan angles
+        """Simulate 15 degree beam angle"""
         scan_angles = np.linspace(0, 359, 360) * (math.pi / 180)  # Main scan angles
-        beam_half_angle = 12.5 * (math.pi / 180)  # Half of 25 degrees in radians
+        beam_half_angle = 7.5 * (math.pi / 180)  # Half of 15 degrees in radians
         lidar_distances = []  # List to hold shortest lidar hit distance for each scan angle
 
         for angle in scan_angles:
@@ -391,10 +386,9 @@ class Particle:
     
     def lidar_scan_fast(self):
         """Simulate a lidar scan with a 180-degree beam width for the particle,
-        using a 25-degree beam width (fan) for each scan angle."""
+        using a 15-degree beam width (fan) for each scan angle."""
         # scan_angles = np.linspace(0, 359, 360) * (math.pi / 180)  # Main scan angles
         scan_angles = np.linspace(-90, 90, 7)  # Main scan angles
-        # scan_angles = [0] # for only front sensor
         lidar_distances = []  # List to hold shortest lidar hit distance for each scan angle
 
         for angle in scan_angles:

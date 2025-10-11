@@ -7,7 +7,7 @@ from mcl_helper import Rover, Particle
 # Initialize pygame
 pygame.init()
 
-# Constants
+# Constants (some are same as mcl_helper.py, will clean up in future)
 GRID_WIDTH = 96 + 2 # inches (one extra inch on each side for border)
 GRID_HEIGHT = 48 + 2 # inches (one extra inch on each side for border)
 ppi = 12
@@ -25,10 +25,6 @@ MIN_SENSOR_READING = 3.0 / 2.54
 NUM_PARTICLES = mh.NUM_PARTICLES
 FORWARD_VELOCITY = 4 * ppi  # inches per second
 ANGULAR_VELOCITY = math.radians(120)  # 120 degrees per second
-
-# Noise parameters
-MOVEMENT_NOISE = 0.2
-WEIGHT_NOISE = 0.5
     
     
 grid = mh.init_grid()
@@ -101,13 +97,13 @@ while running:
     
     if rover.vel_forward != 0 or rover.vel_angular != 0:
         particles, variance = mh.resample_particles(particles, grid, valid_positions, pred_x, pred_y)        
+        pred_x, pred_y, pred_theta = mh.estimate(particles)
 
     # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # print("hello")
     pygame.display.flip()
     clock.tick(60)  # 60 FPS
     
